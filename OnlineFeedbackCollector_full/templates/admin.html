@@ -1,0 +1,116 @@
+{% extends "layout.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Admin Dashboard</h3>
+  <div>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_logout') }}">Logout</a>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h6>Total Feedback</h6>
+      <h2>{{ total }}</h2>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h6>Average Rating</h6>
+      <h2>{{ avg_rating }}</h2>
+    </div>
+  </div>
+  <div class="col-md-4 d-flex align-items-center">
+    <a class="btn btn-success me-2" href="{{ url_for('export_csv') }}">Export CSV</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('api_feedback') }}" target="_blank">View JSON API</a>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h6>Ratings distribution</h6>
+      <canvas id="ratingsChart" height="150"></canvas>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h6>Recent feedback</h6>
+      <ul class="list-group">
+        {% for f in feedbacks[:8] %}
+        <li class="list-group-item">
+          <strong>{{ f['name'] }}</strong> — {{ f['rating'] }} ⭐
+          <div class="small text-muted">{{ f['date_submitted'] }}</div>
+          {% if f['comments'] %}<div class="mt-1">{{ f['comments']|e }}</div>{% endif %}
+        </li>
+        {% else %}
+        <li class="list-group-item">No feedback yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6>All submissions</h6>
+    <div style="overflow:auto;">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>ID</th><th>Name</th><th>Email</th><th>Rating</th><th>Comments</th><th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for f in feedbacks %}
+          <tr>
+            <td>{{ f['id'] }}</td>
+            <td>{{ f['name'] }}</td>
+            <td>{{ f['email'] }}</td>
+            <td>{{ f['rating'] }}</td>
+            <td style="max-width:320px;">{{ f['comments'] }}</td>
+            <td>{{ f['date_submitted'] }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ratingCounts = JSON.parse('{{ rating_counts | tojson | safe }}');
+
+const ctx = document.getElementById('ratingsChart').getContext('2d');
+
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['1', '2', '3', '4', '5'],
+    datasets: [{
+      label: 'Count',
+      data: [
+        ratingCounts["1"],
+        ratingCounts["2"],
+        ratingCounts["3"],
+        ratingCounts["4"],
+        ratingCounts["5"]
+      ],
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { beginAtZero: true, precision: 0 }
+    }
+  }
+});
+</script>
+{% endblock %}
+
